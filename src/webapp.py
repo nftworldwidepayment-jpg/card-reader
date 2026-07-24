@@ -15,7 +15,7 @@ from pathlib import Path
 import cv2
 from flask import Flask, Response, jsonify, request
 
-from src.capture import grab_window, list_window_titles, save_selected_title, load_selected_title
+from src.capture import grab_window, list_window_titles, save_selected_title, load_selected
 from src.regions import load_regions, save_regions, crop
 from src.templates import load_templates, save_template, is_valid_label
 from src.state import build_state, seat_numbers_from_regions
@@ -97,7 +97,8 @@ def calibrate_page():
 
 @app.get("/api/windows")
 def api_windows():
-    return jsonify({"windows": list_window_titles(), "selected": load_selected_title()})
+    selected = load_selected()
+    return jsonify({"windows": list_window_titles(), "selected": (selected or {}).get("title")})
 
 
 @app.post("/api/select-window")

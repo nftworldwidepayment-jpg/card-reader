@@ -1,84 +1,110 @@
-"""Locate and grab pixels from the Club GG desktop window."""
+"""Locate and grab pixels from the Club GG desktop window.
+
+Club GG's window title changes constantly (blinds, pot size, and even the
+table name itself when you switch tables), so identifying "the Club GG
+window" by title text is unreliable. Instead we identify it by the
+underlying process (e.g. "ClubGG.exe") once, and always grab whatever
+window that process currently owns.
+"""
 from __future__ import annotations
 
+import ctypes
 import json
+from ctypes import wintypes
 from pathlib import Path
 
 import numpy as np
 import mss
+import psutil
 import pygetwindow as gw
 
-WINDOW_TITLE_HINTS = ("clubgg", "club gg")
-
-# Titles that must never match, even if they contain a hint above — e.g. our
-# own web UI's browser tab is literally titled "Club GG Hand Reader".
+# Titles that must never match — our own web UI's browser tab can be
+# literally titled "Club GG Hand Reader", so it must never be picked.
 WINDOW_TITLE_EXCLUDE = ("hand reader",)
 
 WINDOW_CONFIG_PATH = Path(__file__).resolve().parent.parent / "window.json"
 
 
-def list_window_titles() -> list[str]:
-    """Return the distinct, non-empty titles of all currently open windows,
-    for the user to pick the real Club GG window from explicitly."""
-    seen: list[str] = []
+def _process_name_for_window(w) -> str | None:
+    """Best-effort executable name (e.g. 'ClubGG.exe') owning this window."""
+    hwnd = getattr(w, "_hWnd", None)
+    if hwnd is None:
+        return None
+    pid = wintypes.DWORD()
+    ctypes.windll.user32.GetWindowThreadProcessId(wintypes.HWND(hwnd), ctypes.byref(pid))
+    if not pid.value:
+        return None
+    try:
+        return psutil.Process(pid.value).name()
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        return None
+
+
+def _visible_windows():
     for w in gw.getAllWindows():
         title = (w.title or "").strip()
-        if title and title not in seen:
-            seen.append(title)
+        if not title:
+            continue
+        if any(bad in title.lower() for bad in WINDOW_TITLE_EXCLUDE):
+            continue
+        yield w
+
+
+def list_window_titles() -> list[str]:
+    """Distinct titles of currently open windows, for the user to pick the
+    real Club GG window from explicitly."""
+    seen: list[str] = []
+    for w in _visible_windows():
+        if w.title not in seen:
+            seen.append(w.title)
     return seen
 
 
 def save_selected_title(title: str) -> None:
+    """Resolve the window currently matching `title` to its owning process,
+    and remember that process — not the title, which will soon change."""
+    match = next((w for w in _visible_windows() if w.title == title), None)
+    process = _process_name_for_window(match) if match else None
+
     with open(WINDOW_CONFIG_PATH, "w", encoding="utf-8") as f:
-        json.dump({"title": title}, f)
+        json.dump({"title": title, "process": process}, f)
 
 
-def load_selected_title() -> str | None:
+def load_selected() -> dict | None:
     if not WINDOW_CONFIG_PATH.exists():
         return None
     with open(WINDOW_CONFIG_PATH, "r", encoding="utf-8") as f:
-        return json.load(f).get("title")
-
-
-def _table_name(title: str) -> str:
-    """The stable prefix of a Club GG table title, e.g. "McJimmer's Ante"
-    out of "McJimmer's Ante  - 0.25/0.50(0.10)". Club GG rewrites the part
-    after the dash (blinds/pot/turn indicators) constantly, so an exact
-    title match breaks within seconds of being selected."""
-    return title.split(" - ")[0].strip().lower()
+        return json.load(f)
 
 
 def find_window():
-    """Return the pygetwindow Window for Club GG, or raise if not found/running.
-
-    Prefers an explicitly user-selected title (see /calibrate's window
-    picker) over guessing by substring, since title-based guessing can
-    match the wrong window (e.g. our own browser tab). Matching is done by
-    the stable table-name prefix rather than the full title, since Club GG
-    keeps rewriting the rest of the title live."""
-    selected = load_selected_title()
-    if selected:
-        wanted = _table_name(selected)
-        for w in gw.getAllWindows():
-            title = (w.title or "").strip()
-            if title and _table_name(title) == wanted:
-                return w
+    """Return the pygetwindow Window for Club GG, or raise if not found/running."""
+    selected = load_selected()
+    if not selected:
         raise RuntimeError(
-            f"A janela selecionada ('{selected}') já não está aberta. "
-            "Volta a Calibrar e escolhe a janela novamente."
+            "Ainda não escolheste a janela do Club GG. Abre Calibrar e "
+            "seleciona-a na lista."
         )
 
-    for w in gw.getAllWindows():
-        title = (w.title or "").strip().lower()
-        if not title:
-            continue
-        if any(bad in title for bad in WINDOW_TITLE_EXCLUDE):
-            continue
-        if any(hint in title for hint in WINDOW_TITLE_HINTS):
+    process = selected.get("process")
+    if process:
+        for w in _visible_windows():
+            if _process_name_for_window(w) == process:
+                return w
+        raise RuntimeError(
+            f"Não encontrei nenhuma janela do programa '{process}' aberta. "
+            "Confirma que o Club GG está aberto, ou volta a Calibrar e "
+            "escolhe a janela novamente."
+        )
+
+    # Fallback for an older window.json saved before process-based matching.
+    title = selected.get("title", "")
+    for w in _visible_windows():
+        if w.title == title:
             return w
     raise RuntimeError(
-        "Não encontrei a janela do Club GG. Abre Calibrar e escolhe a janela "
-        "certa na lista, ou confirma que a app está aberta e visível."
+        f"A janela selecionada ('{title}') já não está aberta. "
+        "Volta a Calibrar e escolhe a janela novamente."
     )
 
 
