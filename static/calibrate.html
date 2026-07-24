@@ -18,9 +18,21 @@
   </header>
 
   <main class="tool-main">
-    <section id="setup" class="tool-card">
-      <h2>1. Quantos lugares tem a mesa?</h2>
-      <p class="hint">Com o Club GG aberto e visível numa mesa (não precisa de estar em jogo).</p>
+    <section id="window-picker" class="tool-card">
+      <h2>1. Qual destas janelas é o Club GG?</h2>
+      <p class="hint">
+        Com o Club GG aberto e visível (não minimizado), escolhe-o na lista
+        abaixo. Se não aparecer, clica em "Atualizar lista".
+      </p>
+      <div class="row">
+        <select id="window-select"></select>
+        <button id="refresh-windows-btn">↻ Atualizar lista</button>
+      </div>
+      <p id="window-error" class="error-text"></p>
+    </section>
+
+    <section id="setup" class="tool-card hidden">
+      <h2>2. Quantos lugares tem a mesa?</h2>
       <div class="row">
         <input type="number" id="num-seats" value="6" min="2" max="10" />
         <button id="start-btn">Começar calibração</button>

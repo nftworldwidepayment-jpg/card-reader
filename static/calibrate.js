@@ -155,6 +155,58 @@ function advance() {
   }
 }
 
+async function loadWindowList() {
+  const select = document.getElementById("window-select");
+  const errorEl = document.getElementById("window-error");
+  errorEl.textContent = "";
+  select.innerHTML = "";
+
+  try {
+    const res = await fetch("/api/windows", { cache: "no-store" });
+    const data = await res.json();
+    if (!data.windows || data.windows.length === 0) {
+      errorEl.textContent = "Não encontrei nenhuma janela aberta. Tenta atualizar a lista.";
+      return;
+    }
+    for (const title of data.windows) {
+      const opt = document.createElement("option");
+      opt.value = title;
+      opt.textContent = title;
+      if (title === data.selected) opt.selected = true;
+      select.appendChild(opt);
+    }
+    if (data.selected && data.windows.includes(data.selected)) {
+      document.getElementById("setup").classList.remove("hidden");
+    }
+  } catch (err) {
+    errorEl.textContent = "Sem ligação ao servidor.";
+  }
+}
+
+document.getElementById("refresh-windows-btn").addEventListener("click", loadWindowList);
+
+document.getElementById("window-select").addEventListener("change", async (evt) => {
+  const title = evt.target.value;
+  const errorEl = document.getElementById("window-error");
+  try {
+    const res = await fetch("/api/select-window", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+    if (!res.ok) {
+      errorEl.textContent = "Erro ao guardar a escolha.";
+      return;
+    }
+    errorEl.textContent = "";
+    document.getElementById("setup").classList.remove("hidden");
+  } catch (err) {
+    errorEl.textContent = "Sem ligação ao servidor.";
+  }
+});
+
+loadWindowList();
+
 document.getElementById("start-btn").addEventListener("click", async () => {
   const numSeats = parseInt(document.getElementById("num-seats").value, 10) || 6;
   names = buildNames(numSeats);

@@ -63,12 +63,14 @@ OpenCV nem introduzir texto no terminal.
 Com o Club GG aberto numa mesa (pode ser só para veres o layout, não precisa
 de estar em jogo), abre **Calibrar** no menu do topo (`http://127.0.0.1:5000/calibrate`):
 
-1. Escolhe quantos lugares tem a mesa e clica em "Começar calibração".
-2. Para cada região pedida (as tuas 2 cartas, board 1-5, stack/blind de cada
+1. **Escolhe a janela certa** numa lista de todas as janelas abertas no teu
+   PC (evita confundir com o próprio browser ou outras apps).
+2. Escolhe quantos lugares tem a mesa e clica em "Começar calibração".
+3. Para cada região pedida (as tuas 2 cartas, board 1-5, stack/blind de cada
    seat) desenha um retângulo à volta da área correspondente **arrastando o
    rato diretamente na imagem** do ecrã capturado. Confirma, ou usa "Saltar"
    se essa região não existir na tua mesa (ex: menos jogadores).
-3. No fim é guardado automaticamente em `regions.json`.
+4. No fim é guardado automaticamente em `regions.json`.
 
 Só precisas de repetir este passo se mudares o layout/tamanho da janela do
 Club GG.

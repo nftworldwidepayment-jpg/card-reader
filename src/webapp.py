@@ -15,7 +15,7 @@ from pathlib import Path
 import cv2
 from flask import Flask, Response, jsonify, request
 
-from src.capture import grab_window
+from src.capture import grab_window, list_window_titles, save_selected_title, load_selected_title
 from src.regions import load_regions, save_regions, crop
 from src.templates import load_templates, save_template, is_valid_label
 from src.state import build_state, seat_numbers_from_regions
@@ -93,6 +93,21 @@ def api_state():
 @app.get("/calibrate")
 def calibrate_page():
     return app.send_static_file("calibrate.html")
+
+
+@app.get("/api/windows")
+def api_windows():
+    return jsonify({"windows": list_window_titles(), "selected": load_selected_title()})
+
+
+@app.post("/api/select-window")
+def api_select_window():
+    data = request.get_json(force=True) or {}
+    title = (data.get("title") or "").strip()
+    if not title:
+        return jsonify({"error": "Título em falta."}), 400
+    save_selected_title(title)
+    return jsonify({"ok": True, "title": title})
 
 
 @app.get("/api/screenshot")
