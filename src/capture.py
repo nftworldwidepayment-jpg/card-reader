@@ -40,16 +40,28 @@ def load_selected_title() -> str | None:
         return json.load(f).get("title")
 
 
+def _table_name(title: str) -> str:
+    """The stable prefix of a Club GG table title, e.g. "McJimmer's Ante"
+    out of "McJimmer's Ante  - 0.25/0.50(0.10)". Club GG rewrites the part
+    after the dash (blinds/pot/turn indicators) constantly, so an exact
+    title match breaks within seconds of being selected."""
+    return title.split(" - ")[0].strip().lower()
+
+
 def find_window():
     """Return the pygetwindow Window for Club GG, or raise if not found/running.
 
     Prefers an explicitly user-selected title (see /calibrate's window
     picker) over guessing by substring, since title-based guessing can
-    match the wrong window (e.g. our own browser tab)."""
+    match the wrong window (e.g. our own browser tab). Matching is done by
+    the stable table-name prefix rather than the full title, since Club GG
+    keeps rewriting the rest of the title live."""
     selected = load_selected_title()
     if selected:
+        wanted = _table_name(selected)
         for w in gw.getAllWindows():
-            if (w.title or "").strip() == selected:
+            title = (w.title or "").strip()
+            if title and _table_name(title) == wanted:
                 return w
         raise RuntimeError(
             f"A janela selecionada ('{selected}') já não está aberta. "
