@@ -66,11 +66,34 @@ ensinar cada carta uma vez.
 
 ## Passo 3 — Correr o leitor
 
+Tens duas formas de correr, ambas leem o teu ecrã localmente (não há nenhuma
+versão "cloud" possível — a captura de ecrã tem de correr na tua máquina):
+
+### Opção A — Interface web bonita (recomendado)
+
+```powershell
+python -m src.webapp
+```
+
+Abre automaticamente `http://127.0.0.1:5000` no browser, com uma mesa
+estilizada, animações a "distribuir" cartas, banner com a força da mão e um
+painel por jogador com stack/blind. Atualiza-se sozinha a cada segundo.
+
+**Atalho no ambiente de trabalho:** corre uma vez
+
+```powershell
+powershell -ExecutionPolicy Bypass -File create_shortcut.ps1
+```
+
+Isto cria `Club GG Hand Reader.lnk` no teu ambiente de trabalho. A partir
+daí basta dar duplo clique no atalho — ele ativa o venv, instala
+dependências se faltarem, arranca o servidor e abre o browser.
+
+### Opção B — Terminal simples
+
 ```powershell
 python -m src.main
 ```
-
-Atualiza a cada ~1 segundo, mostrando no terminal:
 
 ```
 Hole cards : Ah Kh
@@ -89,4 +112,8 @@ Seat 2     : stack=980   blind=50
 - `src/collect_templates.py` — ferramenta interativa para ensinar cartas.
 - `src/ocr.py` — leitura de números (stacks/blinds) via Tesseract.
 - `src/hand_eval.py` — avaliação da força da mão (usa `treys`).
-- `src/main.py` — loop principal que junta tudo.
+- `src/state.py` — junta captura + reconhecimento + avaliação num snapshot.
+- `src/main.py` — versão em terminal.
+- `src/webapp.py` — servidor local Flask que serve a UI web em `static/`.
+- `static/` — HTML/CSS/JS da interface web.
+- `start_app.bat` / `create_shortcut.ps1` — atalho de um clique.
