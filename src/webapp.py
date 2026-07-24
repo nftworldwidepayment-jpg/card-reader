@@ -29,22 +29,35 @@ _latest_state: dict = {
 }
 
 
-def _poll_loop() -> None:
-    regions = load_regions()
-    seats = seat_numbers_from_regions(regions)
+def _empty_state(error: str) -> dict:
+    return {"hole_cards": [], "board_cards": [], "hand": None, "seats": [], "error": error}
 
+
+def _publish(state: dict) -> None:
+    with _lock:
+        _latest_state.clear()
+        _latest_state.update(state)
+
+
+def _poll_loop() -> None:
     while True:
+        try:
+            regions = load_regions()
+        except FileNotFoundError as exc:
+            _publish(_empty_state(str(exc)))
+            time.sleep(POLL_SECONDS)
+            continue
+
+        seats = seat_numbers_from_regions(regions)
         templates = load_templates()  # pick up newly taught cards without restarting
+
         try:
             state = build_state(regions, templates, seats)
             state["error"] = None
         except RuntimeError as exc:
-            state = {"hole_cards": [], "board_cards": [], "hand": None, "seats": [], "error": str(exc)}
+            state = _empty_state(str(exc))
 
-        with _lock:
-            _latest_state.clear()
-            _latest_state.update(state)
-
+        _publish(state)
         time.sleep(POLL_SECONDS)
 
 
