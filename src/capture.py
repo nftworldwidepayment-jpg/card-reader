@@ -7,16 +7,24 @@ import pygetwindow as gw
 
 WINDOW_TITLE_HINTS = ("clubgg", "club gg")
 
+# Titles that must never match, even if they contain a hint above — e.g. our
+# own web UI's browser tab is literally titled "Club GG Hand Reader".
+WINDOW_TITLE_EXCLUDE = ("hand reader",)
+
 
 def find_window():
     """Return the pygetwindow Window for Club GG, or raise if not found/running."""
     for w in gw.getAllWindows():
         title = (w.title or "").strip().lower()
+        if not title:
+            continue
+        if any(bad in title for bad in WINDOW_TITLE_EXCLUDE):
+            continue
         if any(hint in title for hint in WINDOW_TITLE_HINTS):
             return w
     raise RuntimeError(
         "Não encontrei a janela do Club GG. Confirma que a app está aberta "
-        "e visível (não minimizada)."
+        "e visível (não minimizada), e que não está escondida atrás de outra janela."
     )
 
 

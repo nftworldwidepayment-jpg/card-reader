@@ -29,7 +29,8 @@ def default_region_names(num_seats: int = 6) -> list[str]:
 def load_regions(path: Path = REGIONS_PATH) -> dict[str, tuple[int, int, int, int]]:
     if not path.exists():
         raise FileNotFoundError(
-            f"{path} não existe. Corre `python -m src.calibrate` primeiro."
+            "Ainda não calibraste a mesa. Abre http://127.0.0.1:5000/calibrate "
+            "no browser e segue os passos."
         )
     with open(path, "r", encoding="utf-8") as f:
         raw = json.load(f)
