@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ensinar cartas — Club GG Hand Reader</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="tools.css" />
+</head>
+<body>
+  <header>
+    <h1>♠ Club GG <span>Ensinar cartas</span></h1>
+    <nav class="tool-nav">
+      <a href="/">Painel</a>
+      <a href="/calibrate">Calibrar</a>
+      <a href="/teach" class="active">Ensinar cartas</a>
+    </nav>
+  </header>
+
+  <main class="tool-main">
+    <section class="tool-card">
+      <h2 id="region-title">--</h2>
+      <p class="hint">
+        Com uma mão em jogo (cartas visíveis nesta posição), escreve o valor da
+        carta e clica em Guardar. Formato: rank + naipe, ex.
+        <code>Ah</code> = Ás de copas, <code>Td</code> = 10 de ouros,
+        <code>9s</code> = 9 de espadas. Naipes: h ♥, d ♦, c ♣, s ♠.
+      </p>
+
+      <div class="card-preview">
+        <div class="card-preview-frame">
+          <img id="crop" alt="Carta" />
+        </div>
+      </div>
+
+      <div class="row">
+        <input type="text" id="label-input" placeholder="ex: Ah" maxlength="2" autocomplete="off" />
+        <button id="save-btn" class="primary">Guardar</button>
+        <button id="recapture-btn">↻ Recapturar</button>
+        <button id="skip-btn">Saltar</button>
+        <button id="back-btn">← Anterior</button>
+      </div>
+
+      <p id="progress" class="hint"></p>
+      <p id="msg" class="error-text"></p>
+    </section>
+  </main>
+
+  <script src="teach.js"></script>
+</body>
+</html>

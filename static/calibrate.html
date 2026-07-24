@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Calibrar mesa — Club GG Hand Reader</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="tools.css" />
+</head>
+<body>
+  <header>
+    <h1>♠ Club GG <span>Calibração</span></h1>
+    <nav class="tool-nav">
+      <a href="/">Painel</a>
+      <a href="/calibrate" class="active">Calibrar</a>
+      <a href="/teach">Ensinar cartas</a>
+    </nav>
+  </header>
+
+  <main class="tool-main">
+    <section id="setup" class="tool-card">
+      <h2>1. Quantos lugares tem a mesa?</h2>
+      <p class="hint">Com o Club GG aberto e visível numa mesa (não precisa de estar em jogo).</p>
+      <div class="row">
+        <input type="number" id="num-seats" value="6" min="2" max="10" />
+        <button id="start-btn">Começar calibração</button>
+      </div>
+      <p id="setup-error" class="error-text"></p>
+    </section>
+
+    <section id="calibrator" class="tool-card hidden">
+      <div class="calib-header">
+        <h2 id="region-title">--</h2>
+        <p class="hint">Desenha um retângulo à volta da região com o rato. Depois clica em Confirmar.</p>
+      </div>
+
+      <div class="canvas-wrap" id="canvas-wrap">
+        <img id="screenshot" alt="Captura do Club GG" />
+        <canvas id="overlay"></canvas>
+      </div>
+
+      <div class="row">
+        <button id="recapture-btn">↻ Recapturar</button>
+        <button id="skip-btn">Saltar</button>
+        <button id="back-btn">← Anterior</button>
+        <button id="confirm-btn" class="primary">Confirmar →</button>
+      </div>
+
+      <p id="progress" class="hint"></p>
+      <p id="calib-error" class="error-text"></p>
+    </section>
+
+    <section id="done" class="tool-card hidden">
+      <h2>Regiões guardadas ✔</h2>
+      <p>Agora vai a <a href="/teach">Ensinar cartas</a> para o reconhecimento aprender o baralho.</p>
+    </section>
+  </main>
+
+  <script src="calibrate.js"></script>
+</body>
+</html>

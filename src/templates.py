@@ -22,6 +22,10 @@ def all_labels() -> list[str]:
     return [f"{r}{s}" for r in RANKS for s in SUITS]
 
 
+def is_valid_label(label: str) -> bool:
+    return len(label) == 2 and label[0] in RANKS and label[1] in SUITS
+
+
 def template_path(label: str) -> Path:
     return TEMPLATES_DIR / f"{label}.png"
 

@@ -10,13 +10,9 @@ import cv2
 
 from src.capture import grab_window
 from src.regions import HOLE_CARD_NAMES, BOARD_CARD_NAMES, load_regions, crop
-from src.templates import save_template, is_empty_slot, RANKS, SUITS
+from src.templates import save_template, is_empty_slot, is_valid_label
 
 CARD_REGION_NAMES = HOLE_CARD_NAMES + BOARD_CARD_NAMES
-
-
-def valid_label(label: str) -> bool:
-    return len(label) == 2 and label[0] in RANKS and label[1] in SUITS
 
 
 def main() -> None:
@@ -40,7 +36,7 @@ def main() -> None:
 
         if not label:
             continue
-        if not valid_label(label):
+        if not is_valid_label(label):
             print(f"   Etiqueta inválida '{label}', a saltar.")
             continue
 

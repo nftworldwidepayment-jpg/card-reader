@@ -35,51 +35,9 @@ Instala também o **Tesseract OCR** (necessário para ler números):
 https://github.com/UB-Mannheim/tesseract/wiki — depois de instalado, confirma
 o caminho do executável em `src/ocr.py` (`TESSERACT_CMD`).
 
-## Passo 1 — Calibrar as regiões da mesa
+## Passo 1 — Arrancar o servidor
 
-Com o Club GG aberto numa mesa (pode ser só para veres o layout, não precisa
-de estar em jogo):
-
-```powershell
-python -m src.calibrate
-```
-
-Isto tira um screenshot da janela do Club GG e abre uma janela do OpenCV.
-Para cada região pedida no terminal (as tuas 2 cartas, board_1..board_5,
-seat1_stack, seat2_stack, ...), desenha um retângulo com o rato à volta da
-área correspondente e carrega em `ENTER`. No fim é gerado `regions.json`.
-
-Só precisas de repetir este passo se mudares o layout/tamanho da janela do
-Club GG.
-
-## Passo 2 — Ensinar as cartas (uma vez)
-
-```powershell
-python -m src.collect_templates
-```
-
-Com uma mão em jogo (ou usando a mesa de "practice"), a ferramenta mostra o
-recorte de cada carta detetada e pergunta o valor (ex: `Ah` para Ás de
-Copas, `Td` para 10 de Ouros). Repete até teres as 52 cartas guardadas em
-`templates/`. Podes correr isto ao longo de várias mãos — só precisas de
-ensinar cada carta uma vez.
-
-## Passo 3 — Correr o leitor
-
-Tens duas formas de correr, ambas leem o teu ecrã localmente (não há nenhuma
-versão "cloud" possível — a captura de ecrã tem de correr na tua máquina):
-
-### Opção A — Interface web bonita (recomendado)
-
-```powershell
-python -m src.webapp
-```
-
-Abre automaticamente `http://127.0.0.1:5000` no browser, com uma mesa
-estilizada, animações a "distribuir" cartas, banner com a força da mão e um
-painel por jogador com stack/blind. Atualiza-se sozinha a cada segundo.
-
-**Atalho no ambiente de trabalho:** corre uma vez
+**Atalho no ambiente de trabalho (recomendado):** corre uma vez
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File create_shortcut.ps1
@@ -87,9 +45,52 @@ powershell -ExecutionPolicy Bypass -File create_shortcut.ps1
 
 Isto cria `Club GG Hand Reader.lnk` no teu ambiente de trabalho. A partir
 daí basta dar duplo clique no atalho — ele ativa o venv, instala
-dependências se faltarem, arranca o servidor e abre o browser.
+dependências se faltarem, arranca o servidor e abre `http://127.0.0.1:5000`
+no browser.
 
-### Opção B — Terminal simples
+Ou manualmente:
+
+```powershell
+python -m src.webapp
+```
+
+Vais ver o painel principal, mas sem cartas — falta calibrar e ensinar
+(próximos passos). Tudo isto é feito **dentro do browser**, sem janelas do
+OpenCV nem introduzir texto no terminal.
+
+## Passo 2 — Calibrar a mesa (uma vez por layout)
+
+Com o Club GG aberto numa mesa (pode ser só para veres o layout, não precisa
+de estar em jogo), abre **Calibrar** no menu do topo (`http://127.0.0.1:5000/calibrate`):
+
+1. Escolhe quantos lugares tem a mesa e clica em "Começar calibração".
+2. Para cada região pedida (as tuas 2 cartas, board 1-5, stack/blind de cada
+   seat) desenha um retângulo à volta da área correspondente **arrastando o
+   rato diretamente na imagem** do ecrã capturado. Confirma, ou usa "Saltar"
+   se essa região não existir na tua mesa (ex: menos jogadores).
+3. No fim é guardado automaticamente em `regions.json`.
+
+Só precisas de repetir este passo se mudares o layout/tamanho da janela do
+Club GG.
+
+## Passo 3 — Ensinar as cartas (ao longo de algumas mãos)
+
+Abre **Ensinar cartas** no menu do topo (`http://127.0.0.1:5000/teach`). Com
+uma mão em jogo, a página mostra o recorte ampliado de cada carta e pedes
+para escreveres o valor (ex: `Ah` = Ás de copas, `Td` = 10 de ouros). Clica
+"Guardar" e passa automaticamente à seguinte. Repete ao longo de várias mãos
+até teres as 52 cartas guardadas em `templates/` — só precisas de ensinar
+cada carta uma vez.
+
+## Passo 4 — Usar
+
+Volta ao **Painel** (`http://127.0.0.1:5000/`). Atualiza-se sozinho a cada
+segundo, com uma mesa estilizada, o banner da força da mão, e um cartão por
+jogador com stack/blind.
+
+### Alternativa em terminal (sem UI)
+
+Se preferires, há também uma versão simples de linha de comandos:
 
 ```powershell
 python -m src.main
@@ -103,6 +104,11 @@ Seat 1     : stack=1450  blind=25
 Seat 2     : stack=980   blind=50
 ```
 
+Esta usa o mesmo `regions.json` e `templates/` calibrados na web, mas ainda
+tens as ferramentas antigas de terminal (`python -m src.calibrate` e
+`python -m src.collect_templates`, com janelas OpenCV) caso prefiras — não
+são recomendadas por serem mais confusas de usar.
+
 ## Estrutura
 
 - `src/capture.py` — localizar e capturar a janela do Club GG.
@@ -114,6 +120,12 @@ Seat 2     : stack=980   blind=50
 - `src/hand_eval.py` — avaliação da força da mão (usa `treys`).
 - `src/state.py` — junta captura + reconhecimento + avaliação num snapshot.
 - `src/main.py` — versão em terminal.
-- `src/webapp.py` — servidor local Flask que serve a UI web em `static/`.
-- `static/` — HTML/CSS/JS da interface web.
+- `src/webapp.py` — servidor local Flask: serve a UI web em `static/` e os
+  endpoints `/api/screenshot`, `/api/regions`, `/api/card-crop`, `/api/teach`
+  usados pelas páginas de calibração/ensino.
+- `static/index.html` + `app.js` — painel principal (mão atual, board, seats).
+- `static/calibrate.html` + `calibrate.js` — calibração de regiões desenhando
+  retângulos no browser.
+- `static/teach.html` + `teach.js` — ensino de cartas a partir de recortes
+  mostrados no browser.
 - `start_app.bat` / `create_shortcut.ps1` — atalho de um clique.
