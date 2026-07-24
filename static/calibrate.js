@@ -160,6 +160,7 @@ async function loadWindowList() {
   const errorEl = document.getElementById("window-error");
   errorEl.textContent = "";
   select.innerHTML = "";
+  document.getElementById("preview-wrap").classList.add("hidden");
 
   try {
     const res = await fetch("/api/windows", { cache: "no-store" });
@@ -172,22 +173,47 @@ async function loadWindowList() {
       const opt = document.createElement("option");
       opt.value = w.hwnd;
       opt.textContent = w.title;
-      if (w.title === data.selected) opt.selected = true;
       select.appendChild(opt);
     }
-    if (data.selected && data.windows.some((w) => w.title === data.selected)) {
-      document.getElementById("setup").classList.remove("hidden");
+    await showPreview();
+  } catch (err) {
+    errorEl.textContent = "Sem ligação ao servidor.";
+  }
+}
+
+async function showPreview() {
+  const select = document.getElementById("window-select");
+  const errorEl = document.getElementById("window-error");
+  const previewWrap = document.getElementById("preview-wrap");
+  const previewImg = document.getElementById("window-preview");
+  if (!select.value) {
+    previewWrap.classList.add("hidden");
+    return;
+  }
+  try {
+    const res = await fetch(`/api/window-preview?hwnd=${select.value}`, { cache: "no-store" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      errorEl.textContent = data.error || "Não consegui pré-visualizar esta janela.";
+      previewWrap.classList.add("hidden");
+      return;
     }
+    const blob = await res.blob();
+    previewImg.src = URL.createObjectURL(blob);
+    previewWrap.classList.remove("hidden");
+    errorEl.textContent = "";
   } catch (err) {
     errorEl.textContent = "Sem ligação ao servidor.";
   }
 }
 
 document.getElementById("refresh-windows-btn").addEventListener("click", loadWindowList);
+document.getElementById("window-select").addEventListener("change", showPreview);
 
-document.getElementById("window-select").addEventListener("change", async (evt) => {
-  const hwnd = parseInt(evt.target.value, 10);
+document.getElementById("confirm-window-btn").addEventListener("click", async () => {
+  const select = document.getElementById("window-select");
   const errorEl = document.getElementById("window-error");
+  const hwnd = parseInt(select.value, 10);
   try {
     const res = await fetch("/api/select-window", {
       method: "POST",
@@ -195,7 +221,8 @@ document.getElementById("window-select").addEventListener("change", async (evt) 
       body: JSON.stringify({ hwnd }),
     });
     if (!res.ok) {
-      errorEl.textContent = "Erro ao guardar a escolha.";
+      const data = await res.json().catch(() => ({}));
+      errorEl.textContent = data.error || "Erro ao guardar a escolha.";
       return;
     }
     errorEl.textContent = "";

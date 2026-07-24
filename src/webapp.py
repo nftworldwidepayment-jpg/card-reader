@@ -15,7 +15,7 @@ from pathlib import Path
 import cv2
 from flask import Flask, Response, jsonify, request
 
-from src.capture import grab_window, list_windows, save_selected_window, load_selected
+from src.capture import grab_window, grab_by_hwnd, list_windows, save_selected_window, load_selected
 from src.regions import load_regions, save_regions, crop
 from src.templates import load_templates, save_template, is_valid_label
 from src.state import build_state, seat_numbers_from_regions
@@ -99,6 +99,18 @@ def calibrate_page():
 def api_windows():
     selected = load_selected()
     return jsonify({"windows": list_windows(), "selected": (selected or {}).get("title")})
+
+
+@app.get("/api/window-preview")
+def api_window_preview():
+    hwnd = request.args.get("hwnd", type=int)
+    if hwnd is None:
+        return jsonify({"error": "hwnd em falta."}), 400
+    try:
+        frame = grab_by_hwnd(hwnd)
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 409
+    return _png_response(frame)
 
 
 @app.post("/api/select-window")

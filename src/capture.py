@@ -22,6 +22,11 @@ import pygetwindow as gw
 # literally titled "Club GG Hand Reader", so it must never be picked.
 WINDOW_TITLE_EXCLUDE = ("hand reader",)
 
+# Processes that are never the Club GG client — terminals/shells running
+# start_app.bat show up as normal top-level windows too, and have been
+# picked by mistake before.
+PROCESS_EXCLUDE = {"cmd.exe", "powershell.exe", "windowsterminal.exe", "conhost.exe", "explorer.exe"}
+
 WINDOW_CONFIG_PATH = Path(__file__).resolve().parent.parent / "window.json"
 
 
@@ -53,7 +58,19 @@ def _visible_windows():
             continue
         if _hwnd_of(w) is None:
             continue
+        process = _process_name_for_window(w)
+        if process and process.lower() in PROCESS_EXCLUDE:
+            continue
         yield w
+
+
+def grab_by_hwnd(hwnd: int) -> np.ndarray:
+    """Capture a specific window by handle, for previewing a candidate
+    before it's saved as the selected Club GG window."""
+    match = next((w for w in _visible_windows() if _hwnd_of(w) == hwnd), None)
+    if match is None:
+        raise RuntimeError("Essa janela já não está aberta.")
+    return grab(window_bbox(match))
 
 
 def list_windows() -> list[dict]:
