@@ -168,14 +168,14 @@ async function loadWindowList() {
       errorEl.textContent = "Não encontrei nenhuma janela aberta. Tenta atualizar a lista.";
       return;
     }
-    for (const title of data.windows) {
+    for (const w of data.windows) {
       const opt = document.createElement("option");
-      opt.value = title;
-      opt.textContent = title;
-      if (title === data.selected) opt.selected = true;
+      opt.value = w.hwnd;
+      opt.textContent = w.title;
+      if (w.title === data.selected) opt.selected = true;
       select.appendChild(opt);
     }
-    if (data.selected && data.windows.includes(data.selected)) {
+    if (data.selected && data.windows.some((w) => w.title === data.selected)) {
       document.getElementById("setup").classList.remove("hidden");
     }
   } catch (err) {
@@ -186,13 +186,13 @@ async function loadWindowList() {
 document.getElementById("refresh-windows-btn").addEventListener("click", loadWindowList);
 
 document.getElementById("window-select").addEventListener("change", async (evt) => {
-  const title = evt.target.value;
+  const hwnd = parseInt(evt.target.value, 10);
   const errorEl = document.getElementById("window-error");
   try {
     const res = await fetch("/api/select-window", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title }),
+      body: JSON.stringify({ hwnd }),
     });
     if (!res.ok) {
       errorEl.textContent = "Erro ao guardar a escolha.";

@@ -25,9 +25,13 @@ WINDOW_TITLE_EXCLUDE = ("hand reader",)
 WINDOW_CONFIG_PATH = Path(__file__).resolve().parent.parent / "window.json"
 
 
+def _hwnd_of(w) -> int | None:
+    return getattr(w, "_hWnd", None)
+
+
 def _process_name_for_window(w) -> str | None:
     """Best-effort executable name (e.g. 'ClubGG.exe') owning this window."""
-    hwnd = getattr(w, "_hWnd", None)
+    hwnd = _hwnd_of(w)
     if hwnd is None:
         return None
     pid = wintypes.DWORD()
@@ -47,27 +51,30 @@ def _visible_windows():
             continue
         if any(bad in title.lower() for bad in WINDOW_TITLE_EXCLUDE):
             continue
+        if _hwnd_of(w) is None:
+            continue
         yield w
 
 
-def list_window_titles() -> list[str]:
-    """Distinct titles of currently open windows, for the user to pick the
-    real Club GG window from explicitly."""
-    seen: list[str] = []
-    for w in _visible_windows():
-        if w.title not in seen:
-            seen.append(w.title)
-    return seen
+def list_windows() -> list[dict]:
+    """Currently open windows as {hwnd, title}, for the user to pick the real
+    Club GG window from explicitly. `hwnd` (not the title, which Club GG
+    rewrites many times per second) is what identifies the window."""
+    return [{"hwnd": _hwnd_of(w), "title": w.title} for w in _visible_windows()]
 
 
-def save_selected_title(title: str) -> None:
-    """Resolve the window currently matching `title` to its owning process,
-    and remember that process — not the title, which will soon change."""
-    match = next((w for w in _visible_windows() if w.title == title), None)
-    process = _process_name_for_window(match) if match else None
+def save_selected_window(hwnd: int) -> None:
+    """Resolve the window with this exact handle to its owning process, and
+    remember that process — matching by title (even done immediately) is
+    unreliable because Club GG's title can already have changed by the time
+    the lookup runs."""
+    match = next((w for w in _visible_windows() if _hwnd_of(w) == hwnd), None)
+    if match is None:
+        raise RuntimeError("Essa janela já não está aberta. Atualiza a lista e escolhe outra vez.")
 
+    process = _process_name_for_window(match)
     with open(WINDOW_CONFIG_PATH, "w", encoding="utf-8") as f:
-        json.dump({"title": title, "process": process}, f)
+        json.dump({"title": match.title, "process": process}, f)
 
 
 def load_selected() -> dict | None:
